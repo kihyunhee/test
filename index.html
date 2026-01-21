@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>파리 프로슈머: 지성 탐구 가이드</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&family=Noto+Serif+KR:wght@400;700&display=swap');
+        body { font-family: 'Noto Sans KR', sans-serif; background-color: #fcfbf9; color: #292524; }
+        h1, h2, h3, .serif { font-family: 'Noto Serif KR', serif; }
+        #map { height: 500px; width: 100%; border-radius: 1rem; z-index: 1; }
+        .chart-container { position: relative; width: 100%; height: 320px; }
+        .active-tab { border-bottom: 4px solid #b91c1c; color: #7f1d1d; font-weight: 800; }
+        .route-scroll::-webkit-scrollbar { width: 4px; }
+        .route-scroll::-webkit-scrollbar-thumb { background: #d6d3d1; border-radius: 10px; }
+        .prosumer-badge { background: linear-gradient(135deg, #b91c1c 0%, #7f1d1d 100%); color: white; padding: 2px 8px; border-radius: 4px; font-size: 0.7rem; font-weight: bold; }
+    </style>
+</head>
+<body class="bg-[#fcfbf9]">
+
+    <header class="bg-stone-900 text-[#fcfbf9] py-10 px-6 shadow-2xl relative overflow-hidden">
+        <div class="absolute top-0 right-0 opacity-10 transform translate-x-1/4 -translate-y-1/4">
+            <svg width="400" height="400" viewBox="0 0 100 100"><path d="M50 5 L55 45 L95 50 L55 55 L50 95 L45 55 L5 50 L45 45 Z" fill="currentColor"/></svg>
+        </div>
+        <div class="max-w-6xl mx-auto flex flex-col md:flex-row justify-between items-center relative z-10">
+            <div class="text-center md:text-left">
+                <div class="flex items-center justify-center md:justify-start gap-3 mb-2">
+                    <span class="prosumer-badge uppercase">Special Course</span>
+                    <h1 class="text-3xl md:text-5xl font-black serif">파리 프로슈머 지성 탐구</h1>
+                </div>
+                <p class="text-stone-400 text-lg serif italic">"기술 혁신의 시대, 인간다움의 가치를 파리의 길 위에서 묻다"</p>
+            </div>
+            <div class="mt-6 md:mt-0 flex flex-col items-end">
+                <div class="bg-amber-500/10 border border-amber-500/30 p-4 rounded-xl backdrop-blur-sm">
+                    <p class="text-amber-500 text-xs font-bold mb-1">저녁 식사 지원</p>
+                    <p class="text-2xl font-bold text-white">1인 50 € <span class="text-sm font-normal text-stone-300">지원</span></p>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <section class="max-w-6xl mx-auto px-4 -mt-8 relative z-20">
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <!-- Map Card -->
+            <div class="lg:col-span-2 bg-white p-2 rounded-2xl shadow-xl border border-stone-200">
+                <div id="map"></div>
+            </div>
+            <!-- Info Card -->
+            <div class="bg-white p-8 rounded-2xl shadow-xl border border-stone-200 flex flex-col justify-center">
+                <h2 class="text-2xl font-bold mb-4 serif text-stone-800">지적 사유의 흐름</h2>
+                <div class="space-y-6">
+                    <div class="flex items-start gap-4">
+                        <div class="w-10 h-10 rounded-full bg-stone-100 flex items-center justify-center text-xl shrink-0">🏛️</div>
+                        <div>
+                            <p class="font-bold text-stone-800">라탱 지구 (13:00~)</p>
+                            <p class="text-sm text-stone-500">지성의 기원과 아날로그 집단 지성 탐구</p>
+                        </div>
+                    </div>
+                    <div class="flex items-start gap-4">
+                        <div class="w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center text-xl shrink-0">🗼</div>
+                        <div>
+                            <p class="font-bold text-stone-800">에펠탑 지구 (16:30~)</p>
+                            <p class="text-sm text-stone-500">기술 혁신의 문화적 자산화 과정 체감</p>
+                        </div>
+                    </div>
+                    <div class="flex items-start gap-4">
+                        <div class="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center text-xl shrink-0">🍷</div>
+                        <div>
+                            <p class="font-bold text-stone-800">그르넬 지구 (19:00~)</p>
+                            <p class="text-sm text-stone-500">파리지앵의 일상과 선택의 미학 체험</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <main class="max-w-6xl mx-auto px-4 py-12">
+        <!-- District Selector -->
+        <div class="flex flex-wrap justify-center gap-4 mb-12" id="district-nav"></div>
+
+        <div id="district-content" class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <!-- Route List -->
+            <div class="lg:col-span-1 bg-white rounded-2xl shadow-lg border border-stone-200 flex flex-col h-[700px]">
+                <div class="p-6 bg-stone-50 border-b border-stone-200 rounded-t-2xl">
+                    <h3 class="font-bold text-xl text-stone-800">🚩 프로슈머 루트 디테일</h3>
+                    <p class="text-xs text-stone-500 mt-1">장소를 클릭하면 지도가 해당 위치를 조명합니다.</p>
+                </div>
+                <div class="p-6 overflow-y-auto route-scroll flex-grow" id="route-container"></div>
+            </div>
+
+            <!-- Analysis & Features -->
+            <div class="lg:col-span-2 space-y-8">
+                <!-- Theme Insight -->
+                <div class="bg-white p-8 rounded-2xl shadow-lg border-l-8 border-red-700">
+                    <h2 id="zone-title" class="text-3xl font-black serif text-stone-900 mb-3"></h2>
+                    <p id="zone-desc" class="text-lg text-stone-600 leading-relaxed italic"></p>
+                    <div class="flex flex-wrap gap-2 mt-4" id="zone-tags"></div>
+                </div>
+
+                <!-- Charts -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <div class="bg-white p-6 rounded-2xl shadow-md border border-stone-100">
+                        <h4 class="font-bold text-stone-700 mb-4 text-center">📊 코스 성격 지표</h4>
+                        <div class="chart-container"><canvas id="radarChart"></canvas></div>
+                    </div>
+                    <div class="bg-white p-6 rounded-2xl shadow-md border border-stone-100">
+                        <h4 class="font-bold text-stone-700 mb-4 text-center">⏳ 시간 운용 계획</h4>
+                        <div class="chart-container"><canvas id="donutChart"></canvas></div>
+                        <div class="mt-4 text-center">
+                            <span class="text-3xl font-black text-stone-800" id="total-time"></span>
+                            <p class="text-sm text-stone-500">여유로운 토론 시간을 포함한 예상 시간</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Educational Insights -->
+                <div class="bg-stone-900 text-stone-100 p-8 rounded-2xl shadow-xl">
+                    <h3 class="font-bold text-xl mb-6 flex items-center gap-2">
+                        <span class="text-amber-500">●</span> 교육적 사유와 토론 주제
+                    </h3>
+                    <div id="feature-details" class="space-y-6"></div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        const zones = [
+            {
+                id: 0, shortTitle: "프로슈머 전체", fullTitle: "프로슈머: 파리 지성 탐구의 완결",
+                coords: [48.8510, 2.3150],
+                desc: "18세기 카페 문화에서 시작해, 19세기 기술 혁신을 거쳐, 21세기 일상 소비 문화로 연결되는 지적 여정입니다.",
+                tags: ["#AI교육토론", "#기술미학", "#일상의발견", "#지성자산"], color: "rgb(185, 28, 28)",
+                stats: { history: 10, art: 8, scenery: 9, walking: 10, romance: 7 },
+                time: { museum: 1, walking: 3.5, food: 2.5 },
+                route: [
+                    { name: "Le Procope", icon: "☕", desc: "볼테르와 루소의 카페. 지적 사유의 시작.", latlng: [48.8531, 2.3389] },
+                    { name: "뤽상부르 공원", icon: "🌳", desc: "자유 의자 토론: AI 시대의 인간 교육.", latlng: [48.8462, 2.3371] },
+                    { name: "생트주느비에브 도서관", icon: "📚", desc: "아날로그 집단 지성과 철골 미학.", latlng: [48.8471, 2.3461] },
+                    { name: "판테온 & 라탱 골목", icon: "🏛️", desc: "국가 자산으로서의 지성 체감.", latlng: [48.8462, 2.3449] },
+                    { name: "에펠탑", icon: "🗼", desc: "기술이 예술로 승화된 역사적 현장.", latlng: [48.8584, 2.2945] },
+                    { name: "트로카데로 정원", icon: "🌿", desc: "기념비적 건축과 시민 공간의 연결.", latlng: [48.8623, 2.2881] },
+                    { name: "Le Relais de l'Entrecôte", icon: "🥩", desc: "단일 메뉴: 선택의 최소화, 경험의 극대화.", latlng: [48.8655, 2.3021] },
+                    { name: "E.Leclerc Grenelle", icon: "🛒", desc: "파리지앵의 현실적 생활 방식 관찰.", latlng: [48.8505, 2.2917] }
+                ],
+                features: [
+                    { title: "AI 시대, 왜 지금 뤽상부르인가?", content: "수백 년 전 철학자들이 사유하던 공원 의자에 앉아, 오늘날 디지털 기술이 대체할 수 없는 '인간적 가치'에 대해 토론합니다." },
+                    { title: "기술을 문화로 수용하는 법", content: "에펠탑은 단순한 철탑이 아닙니다. 19세기 산업 기술이 어떻게 국가적 자긍심과 예술적 상징으로 전환되었는지 그 메커니즘을 탐구합니다." },
+                    { title: "식문화와 생활 양식의 통찰", content: "유명 식당의 단일 메뉴 정책과 현지 마트의 진열 방식을 통해, 프랑스인이 일상을 구조화하는 독특한 미학을 발견합니다." }
+                ]
+            }
+        ];
+
+        let radarChartInstance = null;
+        let donutChartInstance = null;
+        let map = null;
+        let markerGroup = null;
+        let polyline = null;
+
+        function initApp() {
+            map = L.map('map', { scrollWheelZoom: false }).setView([48.8510, 2.3150], 13);
+            L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+                attribution: '&copy; OpenStreetMap &copy; CARTO'
+            }).addTo(map);
+
+            markerGroup = L.layerGroup().addTo(map);
+            loadZone(0);
+        }
+
+        function loadZone(id) {
+            const data = zones[id];
+            markerGroup.clearLayers();
+            if (polyline) map.removeLayer(polyline);
+
+            const pathCoords = [];
+            data.route.forEach((point, idx) => {
+                const marker = L.divIcon({
+                    className: 'custom-div-icon',
+                    html: `<div style="background-color: ${data.color}; color: white; width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 12px; border: 2px solid white; box-shadow: 0 2px 5px rgba(0,0,0,0.3);">${idx + 1}</div>`,
+                    iconSize: [24, 24],
+                    iconAnchor: [12, 12]
+                });
+
+                L.marker(point.latlng, { icon: marker }).addTo(markerGroup)
+                    .bindPopup(`<div class="p-2 font-bold">${point.icon} ${point.name}</div>`);
+                pathCoords.push(point.latlng);
+            });
+
+            polyline = L.polyline(pathCoords, {
+                color: data.color, weight: 4, opacity: 0.5, dashArray: '8, 8'
+            }).addTo(map);
+
+            map.flyToBounds(L.latLngBounds(pathCoords).pad(0.1), { duration: 2 });
+
+            document.getElementById('zone-title').innerText = data.fullTitle;
+            document.getElementById('zone-desc').innerText = data.desc;
+            document.getElementById('zone-tags').innerHTML = data.tags.map(t => `<span class="px-3 py-1 bg-red-50 text-red-700 text-xs font-bold rounded-full border border-red-100">${t}</span>`).join('');
+            
+            renderRoute(data.route);
+            renderFeatures(data.features);
+            updateRadarChart(data);
+            updateDonutChart(data);
+        }
+
+        function renderRoute(route) {
+            const container = document.getElementById('route-container');
+            container.innerHTML = route.map((s, i) => `
+                <div class="flex gap-5 mb-2 group cursor-pointer" onclick="map.flyTo([${s.latlng}], 17)">
+                    <div class="flex flex-col items-center">
+                        <div class="w-10 h-10 rounded-xl bg-stone-100 text-stone-800 flex items-center justify-center text-xl shadow-sm border border-stone-200 group-hover:bg-red-700 group-hover:text-white transition-all">${s.icon}</div>
+                        ${i < route.length - 1 ? '<div class="w-0.5 h-10 bg-stone-200 my-1"></div>' : ''}
+                    </div>
+                    <div class="pb-6 pt-1">
+                        <h4 class="font-bold text-stone-900 group-hover:text-red-700 transition-colors">${s.name}</h4>
+                        <p class="text-sm text-stone-500 leading-snug mt-1">${s.desc}</p>
+                    </div>
+                </div>`).join('');
+        }
+
+        function renderFeatures(feats) {
+            document.getElementById('feature-details').innerHTML = feats.map(f => `
+                <div class="bg-stone-800 p-6 rounded-xl border border-stone-700">
+                    <h4 class="font-bold text-amber-500 mb-2 flex items-center gap-2">Q. ${f.title}</h4>
+                    <p class="text-stone-300 leading-relaxed">${f.content}</p>
+                </div>`).join('');
+        }
+
+        function updateRadarChart(data) {
+            const ctx = document.getElementById('radarChart').getContext('2d');
+            const dataset = [data.stats.history, data.stats.art, data.stats.scenery, data.stats.walking, data.stats.romance];
+            if (radarChartInstance) radarChartInstance.destroy();
+            radarChartInstance = new Chart(ctx, {
+                type: 'radar',
+                data: {
+                    labels: ['역사적 깊이', '예술적 가치', '풍경/미학', '도보 강도', '지적 낭만'],
+                    datasets: [{ data: dataset, fill: true, backgroundColor: 'rgba(185, 28, 28, 0.2)', borderColor: 'rgb(185, 28, 28)', pointBackgroundColor: 'rgb(185, 28, 28)', pointRadius: 4 }]
+                },
+                options: { responsive: true, maintainAspectRatio: false, scales: { r: { suggestMin: 0, suggestedMax: 10, ticks: { display: false } } }, plugins: { legend: { display: false } } }
+            });
+        }
+
+        function updateDonutChart(data) {
+            const ctx = document.getElementById('donutChart').getContext('2d');
+            const values = [data.time.museum, data.time.walking, data.time.food];
+            const total = values.reduce((a, b) => a + b, 0);
+            document.getElementById('total-time').innerText = `${Math.floor(total)}시간 ${Math.round((total % 1) * 60)}분`;
+            if (donutChartInstance) donutChartInstance.destroy();
+            donutChartInstance = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['사유와 관람', '도보와 탐방', '식사와 일상'],
+                    datasets: [{ data: values, backgroundColor: ['#d97706', '#44403c', '#b91c1c'], borderWidth: 0 }]
+                },
+                options: { responsive: true, maintainAspectRatio: false, cutout: '70%', plugins: { legend: { position: 'bottom', labels: { boxWidth: 12, padding: 20, font: { size: 12 } } } } }
+            });
+        }
+
+        window.addEventListener('load', initApp);
+    </script>
+</body>
+</html>
